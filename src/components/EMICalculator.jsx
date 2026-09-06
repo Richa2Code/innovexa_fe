@@ -17,6 +17,12 @@ export default function EMICalculator({ preselectedScheme, initialProjectCost })
   const [emiData, setEmiData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12; // 12 months (1 year) per page
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [emiData, tenureMonths]);
 
   useEffect(() => {
     if (initialProjectCost) {
@@ -255,59 +261,109 @@ export default function EMICalculator({ preselectedScheme, initialProjectCost })
       </div>
 
       {/* Amortization Table Modal / Expanded Drawer */}
-      {showSchedule && emiData?.schedule && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl overflow-hidden"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <h4 className="text-lg font-bold text-slate-900 font-[#Public_Sans]">
-                Monthly Repayment Breakup Schedule
-              </h4>
-              <span className="text-xs font-mono text-slate-500">
-                Total Tenure: {emiData.tenure_months} Months | Repayment Method: Reducing Balance
-              </span>
+      {showSchedule && emiData?.schedule && (() => {
+        const totalPages = Math.ceil(emiData.schedule.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const displayedSchedule = emiData.schedule.slice(startIndex, endIndex);
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl overflow-hidden"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h4 className="text-lg font-bold text-slate-900 font-[#Public_Sans]">
+                  Monthly Repayment Breakup Schedule
+                </h4>
+                <span className="text-xs font-mono text-slate-500">
+                  Total Tenure: {emiData.tenure_months} Months ({Math.ceil(emiData.tenure_months / 12)} {Math.ceil(emiData.tenure_months / 12) === 1 ? 'Year' : 'Years'}) | Repayment Method: Reducing Balance
+                </span>
+              </div>
+
+              <button
+                onClick={handleDownloadPDF}
+                className="bg-[#0b3d91] hover:bg-[#002869] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
+              >
+                <DownloadIcon className="!text-base" />
+                <span>Download Full PDF</span>
+              </button>
             </div>
 
-            <button
-              onClick={handleDownloadPDF}
-              className="bg-[#0b3d91] hover:bg-[#002869] text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer"
-            >
-              <DownloadIcon className="!text-base" />
-              <span>Download Full PDF</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b">
-                <tr>
-                  <th className="p-3">Month</th>
-                  <th className="p-3">Opening Balance (₹)</th>
-                  <th className="p-3">EMI (₹)</th>
-                  <th className="p-3">Principal (₹)</th>
-                  <th className="p-3">Interest (₹)</th>
-                  <th className="p-3">Ending Balance (₹)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
-                {emiData.schedule.slice(0, 24).map((row) => (
-                  <tr key={row.month} className="hover:bg-blue-50/50">
-                    <td className="p-3 font-bold text-slate-900">{row.month}</td>
-                    <td className="p-3 text-slate-600">{row.beginning_balance.toLocaleString('en-IN')}</td>
-                    <td className="p-3 font-bold text-[#002869]">{row.emi.toLocaleString('en-IN')}</td>
-                    <td className="p-3 text-emerald-700">{row.principal_paid.toLocaleString('en-IN')}</td>
-                    <td className="p-3 text-amber-700">{row.interest_paid.toLocaleString('en-IN')}</td>
-                    <td className="p-3 text-slate-800 font-semibold">{row.ending_balance.toLocaleString('en-IN')}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b">
+                  <tr>
+                    <th className="p-3">Month</th>
+                    <th className="p-3">Opening Balance (₹)</th>
+                    <th className="p-3">EMI (₹)</th>
+                    <th className="p-3">Principal (₹)</th>
+                    <th className="p-3">Interest (₹)</th>
+                    <th className="p-3">Ending Balance (₹)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
-      )}
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono">
+                  {displayedSchedule.map((row) => (
+                    <tr key={row.month} className="hover:bg-blue-50/50">
+                      <td className="p-3 font-bold text-slate-900">{row.month}</td>
+                      <td className="p-3 text-slate-600">{row.beginning_balance.toLocaleString('en-IN')}</td>
+                      <td className="p-3 font-bold text-[#002869]">{row.emi.toLocaleString('en-IN')}</td>
+                      <td className="p-3 text-emerald-700">{row.principal_paid.toLocaleString('en-IN')}</td>
+                      <td className="p-3 text-amber-700">{row.interest_paid.toLocaleString('en-IN')}</td>
+                      <td className="p-3 text-slate-800 font-semibold">{row.ending_balance.toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-slate-100 text-xs">
+                <div className="text-slate-600 font-medium">
+                  Showing months <span className="font-bold text-slate-900">{startIndex + 1}</span> to{' '}
+                  <span className="font-bold text-slate-900">{Math.min(endIndex, emiData.schedule.length)}</span> of{' '}
+                  <span className="font-bold text-slate-900">{emiData.schedule.length}</span> (Page {currentPage} of {totalPages})
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-lg border border-slate-300 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                        currentPage === page
+                          ? 'bg-[#0b3d91] text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      Year {page} (Mos { (page - 1) * itemsPerPage + 1 }-{ Math.min(page * itemsPerPage, emiData.schedule.length) })
+                    </button>
+                  ))}
+
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-lg border border-slate-300 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        );
+      })()}
     </div>
   );
 }
