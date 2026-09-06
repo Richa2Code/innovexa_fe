@@ -53,10 +53,12 @@ export async function getDistricts(stateId) {
  */
 export async function getEligibleSchemes(payload) {
   try {
+    // Strip location fields (country_id, state_id, district_id) from /eligible API request
+    const { country_id, state_id, district_id, ...eligiblePayload } = payload || {};
     const response = await fetch(`${BASE_URL}/schemes/eligible`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(eligiblePayload)
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const json = await response.json();
@@ -84,6 +86,40 @@ export async function getAllSchemes() {
   }
 }
 
+export async function getChannelPartners({ countryId, stateId, districtId, schemeId }) {
+  try {
+    const params = new URLSearchParams();
+    if (countryId) params.append('country_id', countryId);
+    if (stateId) params.append('state_id', stateId);
+    if (districtId) params.append('district_id', districtId);
+    if (schemeId) params.append('scheme_id', schemeId);
+
+    const response = await fetch(`${BASE_URL}/channel-partners?${params.toString()}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const json = await response.json();
+    return json.data || json;
+  } catch (error) {
+    console.warn('API fetch channel partners failed, fallback to mock:', error);
+    return [
+      {
+        id: "6f6e9c67-fb99-4a16-a211-12629f462348",
+        name: "Pahal Financial Services Pvt. Ltd.",
+        partner_type: "NBFC-MFI",
+        state_id: stateId || "e97f1521-8f64-4de5-943d-0ab2fff603bd",
+        district_id: districtId || "9735dd54-23f2-4387-a743-8152ee50c5ed",
+        address: "7th Floor, Binori B Square-2, Opp. Hathising Ni Vadi, Ambli-Iscon Road, Ahmedabad – 380054, Gujarat",
+        pincode: "380054",
+        phone: null,
+        email: null,
+        website: null,
+        latitude: null,
+        longitude: null
+      }
+    ];
+  }
+}
 
 /**
  * Fetch scheme details by scheme ID and district ID

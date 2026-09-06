@@ -3,15 +3,36 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CloseIcon from '@mui/icons-material/Close';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import PhoneIcon from '@mui/icons-material/Phone';
-import PercentIcon from '@mui/icons-material/Percent';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SearchIcon from '@mui/icons-material/Search';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CircularProgress from '@mui/material/CircularProgress';
-import { getSchemeDetails } from '../services/api';
+import { getSchemeDetails, getChannelPartners, getCountries, getStates, getDistricts } from '../services/api';
 
-export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCalculateEMI }) {
+export default function SchemeDetailsModal({ schemeId, countryId, stateId, districtId, onClose, onCalculateEMI }) {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Channel Partners state
+  const [channelPartners, setChannelPartners] = useState([]);
+  const [loadingPartners, setLoadingPartners] = useState(false);
+  const [partnersFetched, setPartnersFetched] = useState(false);
+
+  // Popup Modal state for location search
+  const [showLocationPopup, setShowLocationPopup] = useState(false);
+
+  // Location selector state in popup
+  const [popCountryId, setPopCountryId] = useState(countryId || '');
+  const [popStateId, setPopStateId] = useState(stateId || '');
+  const [popDistrictId, setPopDistrictId] = useState(districtId || '');
+
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+
+  const [loadingPopStates, setLoadingPopStates] = useState(false);
+  const [loadingPopDistricts, setLoadingPopDistricts] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -19,9 +40,71 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
       const res = await getSchemeDetails(schemeId, districtId);
       setDetails(res);
       setLoading(false);
+
+      // Auto-fetch channel partners if location ids are provided
+      if (countryId || stateId || districtId) {
+        fetchPartners(countryId, stateId, districtId);
+      }
     }
     load();
-  }, [schemeId, districtId]);
+  }, [schemeId, districtId, countryId, stateId]);
+
+  // Function to query channel partners API
+  const fetchPartners = async (cId, sId, dId) => {
+    setLoadingPartners(true);
+    setPartnersFetched(true);
+    const res = await getChannelPartners({
+      countryId: cId || countryId,
+      stateId: sId || stateId,
+      districtId: dId || districtId,
+      schemeId: schemeId
+    });
+    setChannelPartners(Array.isArray(res) ? res : []);
+    setLoadingPartners(false);
+  };
+
+  // Load countries when popup opens
+  useEffect(() => {
+    if (showLocationPopup) {
+      async function loadGeo() {
+        const cList = await getCountries();
+        setCountries(Array.isArray(cList) ? cList : []);
+        if (cList.length > 0 && !popCountryId) {
+          setPopCountryId(cList[0].id);
+        }
+      }
+      loadGeo();
+    }
+  }, [showLocationPopup]);
+
+  // Load states when popup country changes
+  useEffect(() => {
+    if (!showLocationPopup || !popCountryId) return;
+    async function loadS() {
+      setLoadingPopStates(true);
+      const sList = await getStates(popCountryId);
+      setStates(Array.isArray(sList) ? sList : []);
+      setLoadingPopStates(false);
+    }
+    loadS();
+  }, [showLocationPopup, popCountryId]);
+
+  // Load districts when popup state changes
+  useEffect(() => {
+    if (!showLocationPopup || !popStateId) return;
+    async function loadD() {
+      setLoadingPopDistricts(true);
+      const dList = await getDistricts(popStateId);
+      setDistricts(Array.isArray(dList) ? dList : []);
+      setLoadingPopDistricts(false);
+    }
+    loadD();
+  }, [showLocationPopup, popStateId]);
+
+  const handleSearchFromPopup = () => {
+    setShowLocationPopup(false);
+    fetchPartners(popCountryId, popStateId, popDistrictId);
+  };
 
   return (
     <AnimatePresence>
@@ -30,7 +113,7 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-white max-w-3xl w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-8"
+          className="bg-white max-w-3xl w-full rounded-3xl border border-slate-200 shadow-2xl overflow-hidden my-8 relative"
         >
           {/* Header Bar */}
           <div className="bg-gradient-to-r from-[#002869] to-[#07265C] text-white p-6 sm:p-8 relative">
@@ -71,7 +154,7 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
               Fetching complete scheme guidelines and repayment rules...
             </div>
           ) : (
-            <div className="p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="p-6 sm:p-8 space-y-6 max-h-[65vh] overflow-y-auto">
               {/* Description */}
               <div className="space-y-2">
                 <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -125,58 +208,104 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
                 </div>
               )}
 
-              {/* Designated Channel Partners */}
-              {details.channel_partners && details.channel_partners.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
+              {/* Find Channel Partners Section */}
+              <div className="space-y-4 pt-2 border-t border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
                     <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                      Designated Channel Partners in Your District ({details.channel_partners.length})
+                      Channel Partners for this Scheme
                     </h4>
-                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      Verified Outlets
-                    </span>
+                    <p className="text-xs text-slate-500">
+                      Find accredited lending institutions, NBFC-MFIs, or banks for loan application.
+                    </p>
                   </div>
 
+                  <button
+                    onClick={() => {
+                      if (!partnersFetched) {
+                        fetchPartners(popCountryId, popStateId, popDistrictId);
+                      } else {
+                        setShowLocationPopup(true);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl text-xs shadow transition-all shrink-0 active:scale-95"
+                  >
+                    <SearchIcon className="!text-sm" />
+                    <span>{partnersFetched ? 'Change Location / Search' : 'Find Channel Partner'}</span>
+                  </button>
+                </div>
+
+                {/* Loading state for partners */}
+                {loadingPartners && (
+                  <div className="p-6 text-center text-slate-500 text-xs font-medium space-y-2">
+                    <CircularProgress size={24} color="primary" />
+                    <p>Searching matching channel partners for this scheme...</p>
+                  </div>
+                )}
+
+                {/* Found Channel Partners Display */}
+                {!loadingPartners && partnersFetched && channelPartners.length > 0 && (
                   <div className="space-y-3">
-                    {details.channel_partners.map((cp, idx) => (
-                      <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 hover:border-blue-300 transition-colors">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-700">
+                        Available Channel Partners ({channelPartners.length})
+                      </span>
+                      <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Verified Outlets
+                      </span>
+                    </div>
+
+                    {channelPartners.map((cp, idx) => (
+                      <div key={cp.id || idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 hover:border-blue-300 transition-colors">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <strong className="text-sm text-slate-900 font-[#Public_Sans]">{cp.name}</strong>
                               <span className="text-[10px] font-bold bg-blue-100 text-[#002869] px-2 py-0.5 rounded-full">
-                                {cp.type}
+                                {cp.partner_type || cp.type}
                               </span>
                             </div>
                             <p className="text-xs text-slate-600 leading-relaxed">
-                              {cp.address ? `${cp.address}, ` : ''}{cp.pincode ? `PIN - ${cp.pincode}` : 'District Branch'}
+                              {cp.address ? `${cp.address}, ` : ''}{cp.pincode ? `PIN - ${cp.pincode}` : 'Branch Office'}
                             </p>
                           </div>
 
-                          {/* Open Channel Partner Button */}
                           <a
                             href={cp.website || cp.source_url || details.source_url || '#'}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0b3d91] hover:bg-[#07265C] text-white font-bold rounded-xl text-xs shadow transition-all shrink-0 active:scale-95"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#0b3d91] hover:bg-[#07265C] text-white font-bold rounded-xl text-xs shadow transition-all shrink-0 active:scale-95"
                           >
-                            <span>Open Partner Portal</span>
-                            <OpenInNewIcon className="!text-xs" />
+                            <span>Open Partner</span>
                           </a>
                         </div>
 
-                        {/* Contact details bar */}
                         <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
-                          <span className="text-slate-500">Official Contact / Toll-Free:</span>
+                          <span className="text-slate-500">Contact / Toll-Free:</span>
                           <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
-                            <PhoneIcon className="!text-xs" /> {cp.contact || '1800-11-0396'}
+                            <PhoneIcon className="!text-xs" /> {cp.phone || cp.contact || '1800-11-0396'}
                           </span>
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* No Channel Partner Found Warning & Prompt for Different Location */}
+                {!loadingPartners && partnersFetched && channelPartners.length === 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center space-y-3">
+                    <p className="text-xs text-amber-900 font-semibold">
+                      No channel partners found for the selected location for this scheme.
+                    </p>
+                    <button
+                      onClick={() => setShowLocationPopup(true)}
+                      className="px-4 py-2 bg-[#0b3d91] text-white font-bold rounded-xl text-xs shadow hover:bg-[#07265C] transition-all"
+                    >
+                      Find Channel Partner in Different Location
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Official Source Link */}
               {details.source_url && (
@@ -188,7 +317,6 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
                     className="text-xs text-[#0b3d91] font-bold hover:underline flex items-center gap-1"
                   >
                     <span>View Official Ministry Circular (NSFDC Portal)</span>
-                    <OpenInNewIcon className="!text-xs" />
                   </a>
                 </div>
               )}
@@ -216,8 +344,129 @@ export default function SchemeDetailsModal({ schemeId, districtId, onClose, onCa
               </button>
             )}
           </div>
+
+          {/* POPUP MODAL: Location Selection for Channel Partner Search */}
+          {showLocationPopup && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-3xl p-6 max-w-md w-full border border-slate-200 shadow-2xl space-y-5"
+              >
+                <div className="flex items-center justify-between border-b pb-3">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <LocationOnIcon className="text-amber-500" /> Select Location for Channel Partner
+                  </h3>
+                  <button
+                    onClick={() => setShowLocationPopup(false)}
+                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500"
+                  >
+                    <CloseIcon className="!text-sm" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Scheme info auto-selected note */}
+                  <div className="bg-blue-50 p-3 rounded-xl border border-blue-100 text-xs text-[#002869]">
+                    <span className="font-bold block">Scheme Selected (Under the Hood):</span>
+                    <span>{details?.name} (ID: {schemeId})</span>
+                  </div>
+
+                  {/* Country Selection */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Country
+                    </label>
+                    <select
+                      value={popCountryId}
+                      onChange={(e) => {
+                        setPopCountryId(e.target.value);
+                        setPopStateId('');
+                        setPopDistrictId('');
+                      }}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-900 focus:ring-2 focus:ring-[#0b3d91] outline-none"
+                    >
+                      {countries.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* State Selection */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      State / UT
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={popStateId}
+                        onChange={(e) => {
+                          setPopStateId(e.target.value);
+                          setPopDistrictId('');
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-900 focus:ring-2 focus:ring-[#0b3d91] outline-none"
+                      >
+                        <option value="">-- Select State --</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      {loadingPopStates && (
+                        <div className="absolute right-2 top-2">
+                          <CircularProgress size={16} color="primary" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* District Selection */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      District
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={popDistrictId}
+                        onChange={(e) => setPopDistrictId(e.target.value)}
+                        disabled={!popStateId}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-900 focus:ring-2 focus:ring-[#0b3d91] outline-none disabled:opacity-50"
+                      >
+                        <option value="">-- Select District --</option>
+                        {districts.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                      {loadingPopDistricts && (
+                        <div className="absolute right-2 top-2">
+                          <CircularProgress size={16} color="primary" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3 border-t">
+                  <button
+                    onClick={() => setShowLocationPopup(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSearchFromPopup}
+                    disabled={!popStateId}
+                    className="px-5 py-2 bg-[#0b3d91] hover:bg-[#07265C] disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow transition-all"
+                  >
+                    Find Channel Partner
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>
   );
 }
+

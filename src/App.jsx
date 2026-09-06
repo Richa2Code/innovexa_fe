@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CircularProgress from '@mui/material/CircularProgress';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -45,6 +45,11 @@ export default function App() {
     annual_income: 100000,
     project_cost: 100000
   });
+
+  // Scroll to top whenever activeTab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab]);
 
   // Execute Eligibility Search
   const handleFetchEligibility = async (data) => {
@@ -313,6 +318,8 @@ export default function App() {
       {detailScheme && (
         <SchemeDetailsModal
           schemeId={detailScheme.id}
+          countryId={formData.country_id}
+          stateId={formData.state_id}
           districtId={formData.district_id}
           onClose={() => setDetailScheme(null)}
           onCalculateEMI={handleOpenEMIWithScheme}
