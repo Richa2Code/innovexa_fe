@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         // target: 'http://localhost:8000', // Local Server BASE Url
-        target: 'https://innovexa-be.onrender.com/', // Production Server BASE Url
+        target: 'https://innovexa-be.onrender.com', // Production Server BASE Url
         changeOrigin: true,
         secure: false,
       }

@@ -1,6 +1,7 @@
 import { MOCK_COUNTRIES, MOCK_STATES, MOCK_DISTRICTS, MOCK_SCHEMES } from '../data/mockData';
 
-const BASE_URL = '/api/v1/public';
+const API_HOST = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : 'https://innovexa-be.onrender.com');
+const BASE_URL = `${API_HOST}/api/v1/public`;
 
 /**
  * Fetch all countries
