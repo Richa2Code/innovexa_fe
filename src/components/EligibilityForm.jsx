@@ -23,7 +23,8 @@ export default function EligibilityForm({ onSubmit, initialValues, t }) {
     state_id: initialValues?.state_id || '',
     district_id: initialValues?.district_id || '',
     annual_income: initialValues?.annual_income || 100000,
-    project_cost: initialValues?.project_cost || 100000
+    project_cost: initialValues?.project_cost || 100000,
+    purpose: initialValues?.purpose || 'Term Loan'
   });
 
   // Load countries on mount
@@ -306,6 +307,29 @@ export default function EligibilityForm({ onSubmit, initialValues, t }) {
                 </div>
               </div>
 
+              {/* Loan Purpose Selection */}
+              <div className="space-y-2 pt-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Loan Purpose
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {['Term Loan', 'Education Loan', 'Micro Finance'].map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, purpose: opt })}
+                      className={`p-3 rounded-xl border text-center transition-all font-semibold text-xs sm:text-sm ${
+                        formData.purpose === opt
+                          ? 'border-[#0b3d91] bg-blue-50/80 text-[#0b3d91] shadow-sm ring-2 ring-[#0b3d91]/20'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Estimated Project Cost */}
               <div className="space-y-2 pt-2">
                 <div className="flex justify-between items-center gap-4">
@@ -335,7 +359,7 @@ export default function EligibilityForm({ onSubmit, initialValues, t }) {
                 />
                 <div className="flex justify-between text-[11px] text-slate-400 font-mono">
                   <span>₹10,000</span>
-                  <span>₹10,00,000</span>
+                  <span>₹10,000,00</span>
                   <span>₹20,00,000+ (Custom Input Allowed)</span>
                 </div>
               </div>
@@ -381,6 +405,12 @@ export default function EligibilityForm({ onSubmit, initialValues, t }) {
                     <span className="text-xs text-slate-500 block">Selected District</span>
                     <strong className="text-slate-900">
                       {districts.find(d => d.id === formData.district_id)?.name || 'Not Selected'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-500 block">Loan Purpose</span>
+                    <strong className="text-indigo-700 font-semibold">
+                      {formData.purpose}
                     </strong>
                   </div>
                   <div>

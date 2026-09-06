@@ -114,8 +114,8 @@ export async function getChannelPartners({ countryId, stateId, districtId, schem
         phone: null,
         email: null,
         website: null,
-        latitude: null,
-        longitude: null
+        latitude: 23.0315,
+        longitude: 72.5065
       }
     ];
   }

@@ -7,6 +7,10 @@ import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SearchIcon from '@mui/icons-material/Search';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import MapIcon from '@mui/icons-material/Map';
+import DirectionsIcon from '@mui/icons-material/Directions';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getSchemeDetails, getChannelPartners, getCountries, getStates, getDistricts } from '../services/api';
 
@@ -18,6 +22,9 @@ export default function SchemeDetailsModal({ schemeId, countryId, stateId, distr
   const [channelPartners, setChannelPartners] = useState([]);
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [partnersFetched, setPartnersFetched] = useState(false);
+  const [cpCurrentPage, setCpCurrentPage] = useState(1);
+  const cpPerPage = 3;
+  const [expandedMapId, setExpandedMapId] = useState(null);
 
   // Popup Modal state for location search
   const [showLocationPopup, setShowLocationPopup] = useState(false);
@@ -53,6 +60,7 @@ export default function SchemeDetailsModal({ schemeId, countryId, stateId, distr
   const fetchPartners = async (cId, sId, dId) => {
     setLoadingPartners(true);
     setPartnersFetched(true);
+    setCpCurrentPage(1);
     const res = await getChannelPartners({
       countryId: cId || countryId,
       stateId: sId || stateId,
@@ -244,52 +252,170 @@ export default function SchemeDetailsModal({ schemeId, countryId, stateId, distr
                 )}
 
                 {/* Found Channel Partners Display */}
-                {!loadingPartners && partnersFetched && channelPartners.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-700">
-                        Available Channel Partners ({channelPartners.length})
-                      </span>
-                      <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        Verified Outlets
-                      </span>
-                    </div>
+                {!loadingPartners && partnersFetched && channelPartners.length > 0 && (() => {
+                  const totalCpPages = Math.ceil(channelPartners.length / cpPerPage);
+                  const indexOfLastCp = cpCurrentPage * cpPerPage;
+                  const indexOfFirstCp = indexOfLastCp - cpPerPage;
+                  const currentChannelPartners = channelPartners.slice(indexOfFirstCp, indexOfLastCp);
 
-                    {channelPartners.map((cp, idx) => (
-                      <div key={cp.id || idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 hover:border-blue-300 transition-colors">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <strong className="text-sm text-slate-900 font-[#Public_Sans]">{cp.name}</strong>
-                              <span className="text-[10px] font-bold bg-blue-100 text-[#002869] px-2 py-0.5 rounded-full">
-                                {cp.partner_type || cp.type}
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-700">
+                          Available Channel Partners ({channelPartners.length})
+                        </span>
+                        <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          Verified Outlets
+                        </span>
+                      </div>
+
+                      {currentChannelPartners.map((cp, idx) => {
+                        const cpKey = cp.id || `cp-${idx}`;
+                        const isMapOpen = expandedMapId === cpKey;
+                        const hasCoords = cp.latitude != null && cp.longitude != null;
+                        const mapQuery = hasCoords
+                          ? `${cp.latitude},${cp.longitude}`
+                          : encodeURIComponent(`${cp.name}, ${cp.address || ''}`);
+
+                        return (
+                          <div key={cpKey} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 hover:border-blue-300 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <strong className="text-sm text-slate-900 font-[#Public_Sans]">{cp.name}</strong>
+                                  <span className="text-[10px] font-bold bg-blue-100 text-[#002869] px-2 py-0.5 rounded-full">
+                                    {cp.partner_type || cp.type}
+                                  </span>
+                                  {hasCoords && (
+                                    <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <LocationOnIcon className="!text-xs" />
+                                      {cp.latitude.toFixed(4)}, {cp.longitude.toFixed(4)}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                  {cp.address ? `${cp.address}, ` : ''}{cp.pincode ? `PIN - ${cp.pincode}` : 'Branch Office'}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                                <button
+                                  onClick={() => setExpandedMapId(isMapOpen ? null : cpKey)}
+                                  className={`inline-flex items-center gap-1 px-3 py-1.5 font-bold rounded-xl text-xs shadow transition-all cursor-pointer ${isMapOpen
+                                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
+                                      : 'bg-slate-200 hover:bg-slate-300 text-slate-800'
+                                    }`}
+                                >
+                                  <MapIcon className="!text-xs" />
+                                  <span>{isMapOpen ? 'Hide Map' : 'View Map'}</span>
+                                </button>
+
+                                <a
+                                  href={cp.website || cp.source_url || details.source_url || '#'}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#0b3d91] hover:bg-[#07265C] text-white font-bold rounded-xl text-xs shadow transition-all shrink-0 active:scale-95"
+                                >
+                                  <span>Open Partner</span>
+                                </a>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
+                              <span className="text-slate-500">Contact / Toll-Free:</span>
+                              <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
+                                <PhoneIcon className="!text-xs" /> {cp.phone || cp.contact || '1800-11-0396'}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                              {cp.address ? `${cp.address}, ` : ''}{cp.pincode ? `PIN - ${cp.pincode}` : 'Branch Office'}
-                            </p>
+
+                            {/* Embedded Interactive Map Drawer */}
+                            {isMapOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-3 rounded-2xl overflow-hidden border border-slate-300 shadow-md bg-slate-100 relative"
+                              >
+                                <div className="flex items-center justify-between px-3 py-2 bg-[#07265C] text-white text-[11px]">
+                                  <span className="flex items-center gap-1 font-semibold truncate max-w-[70%]">
+                                    <LocationOnIcon className="!text-xs text-amber-400 shrink-0" />
+                                    <span className="truncate">
+                                      {hasCoords ? `Coordinates: ${cp.latitude}, ${cp.longitude}` : cp.address}
+                                    </span>
+                                  </span>
+                                  <a
+                                    href={`https://www.google.com/maps?q=${mapQuery}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-slate-950 px-2.5 py-1 rounded-lg font-bold transition-all text-[10px] shrink-0"
+                                  >
+                                    <DirectionsIcon className="!text-xs" />
+                                    <span>Get Directions</span>
+                                    <OpenInNewIcon className="!text-[10px]" />
+                                  </a>
+                                </div>
+
+                                <iframe
+                                  title={`Map for ${cp.name}`}
+                                  width="100%"
+                                  height="220"
+                                  frameBorder="0"
+                                  scrolling="no"
+                                  src={`https://maps.google.com/maps?q=${mapQuery}&hl=en&z=15&output=embed`}
+                                  className="w-full border-0 rounded-b-2xl"
+                                ></iframe>
+                              </motion.div>
+                            )}
                           </div>
+                        );
+                      })}
 
-                          <a
-                            href={cp.website || cp.source_url || details.source_url || '#'}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#0b3d91] hover:bg-[#07265C] text-white font-bold rounded-xl text-xs shadow transition-all shrink-0 active:scale-95"
-                          >
-                            <span>Open Partner</span>
-                          </a>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60">
-                          <span className="text-slate-500">Contact / Toll-Free:</span>
-                          <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
-                            <PhoneIcon className="!text-xs" /> {cp.phone || cp.contact || '1800-11-0396'}
+                      {/* Pagination Controls */}
+                      {totalCpPages > 1 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-3 border-t border-slate-200 text-xs">
+                          <span className="text-slate-500">
+                            Showing <strong className="text-slate-800">{indexOfFirstCp + 1}</strong> to{' '}
+                            <strong className="text-slate-800">{Math.min(indexOfLastCp, channelPartners.length)}</strong> of{' '}
+                            <strong className="text-slate-800">{channelPartners.length}</strong> partners
                           </span>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setCpCurrentPage((prev) => Math.max(prev - 1, 1))}
+                              disabled={cpCurrentPage === 1}
+                              className="p-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                              title="Previous Page"
+                            >
+                              <ChevronLeftIcon className="!text-sm" />
+                            </button>
+
+                            {Array.from({ length: totalCpPages }, (_, i) => i + 1).map((pageNum) => (
+                              <button
+                                key={pageNum}
+                                onClick={() => setCpCurrentPage(pageNum)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${cpCurrentPage === pageNum
+                                    ? 'bg-[#002869] text-white shadow-xs'
+                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                  }`}
+                              >
+                                {pageNum}
+                              </button>
+                            ))}
+
+                            <button
+                              onClick={() => setCpCurrentPage((prev) => Math.min(prev + 1, totalCpPages))}
+                              disabled={cpCurrentPage === totalCpPages}
+                              className="p-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-transparent transition-colors cursor-pointer disabled:cursor-not-allowed"
+                              title="Next Page"
+                            >
+                              <ChevronRightIcon className="!text-sm" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* No Channel Partner Found Warning & Prompt for Different Location */}
                 {!loadingPartners && partnersFetched && channelPartners.length === 0 && (

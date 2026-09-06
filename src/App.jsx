@@ -43,7 +43,8 @@ export default function App() {
     state_id: '',
     district_id: '',
     annual_income: 100000,
-    project_cost: 100000
+    project_cost: 100000,
+    purpose: 'Term Loan'
   });
 
   // Scroll to top whenever activeTab changes
@@ -200,25 +201,6 @@ export default function App() {
                       Change Parameters
                     </button>
                   </div>
-                </div>
-
-                {/* Filter Category Tabs */}
-                <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t text-xs">
-                  <span className="text-slate-400 font-bold flex items-center gap-1 shrink-0">
-                    <TuneIcon className="!text-sm" /> Filter:
-                  </span>
-                  {['ALL', 'Micro Finance', 'Udyam Nidhi', 'Term Loan'].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setCategoryFilter(cat)}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all shrink-0 ${categoryFilter === cat
-                          ? 'bg-[#0b3d91] text-white shadow'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
                 </div>
               </div>
 

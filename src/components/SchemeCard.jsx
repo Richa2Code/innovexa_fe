@@ -16,9 +16,8 @@ export default function SchemeCard({ scheme, onViewDetails, onCalculateEMI, onCo
     <motion.div
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
-      className={`bg-white rounded-3xl border ${
-        isSelectedForCompare ? 'border-amber-500 ring-2 ring-amber-400' : 'border-slate-200'
-      } shadow-md hover:shadow-xl overflow-hidden flex flex-col justify-between`}
+      className={`bg-white rounded-3xl border ${isSelectedForCompare ? 'border-amber-500 ring-2 ring-amber-400' : 'border-slate-200'
+        } shadow-md hover:shadow-xl overflow-hidden flex flex-col justify-between`}
     >
       {/* Header Banner */}
       <div className="p-6 space-y-4">
@@ -34,11 +33,10 @@ export default function SchemeCard({ scheme, onViewDetails, onCalculateEMI, onCo
 
           {/* Suitability Score Badge (Only when evaluated & not in View All mode) */}
           {hasScore && (
-            <div className={`px-3 py-1.5 rounded-xl border flex flex-col items-center justify-center shrink-0 ${
-              isHighMatch 
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-800' 
-                : 'bg-blue-50 border-blue-300 text-blue-800'
-            }`}>
+            <div className={`px-3 py-1.5 rounded-xl border flex flex-col items-center justify-center shrink-0 ${isHighMatch
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-blue-50 border-blue-300 text-blue-800'
+              }`}>
               <span className="text-xs font-semibold">{scheme.suitability_label || 'Suitable'}</span>
               <span className="text-lg font-extrabold font-mono">{score.toFixed(1)}%</span>
             </div>
@@ -67,8 +65,8 @@ export default function SchemeCard({ scheme, onViewDetails, onCalculateEMI, onCo
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
             <span className="text-[11px] text-slate-500 block font-medium">Beneficiary Rate</span>
             <span className="text-sm font-extrabold text-emerald-700 font-mono flex items-center gap-0.5">
-              <PercentIcon className="!text-xs" />
-              {scheme.beneficiary_interest_rate || 5.0}% p.a.
+              {/* <PercentIcon className="!text-xs" /> */}
+              {scheme.beneficiary_interest_rate || 5.0} % p.a.
             </span>
           </div>
         </div>
@@ -106,11 +104,10 @@ export default function SchemeCard({ scheme, onViewDetails, onCalculateEMI, onCo
         <div className="flex gap-2">
           <button
             onClick={() => onCompare(scheme)}
-            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 ${
-              isSelectedForCompare
-                ? 'bg-amber-500 text-white border-amber-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-            }`}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1 ${isSelectedForCompare
+              ? 'bg-amber-500 text-white border-amber-600'
+              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+              }`}
           >
             <CompareArrowsIcon className="!text-sm" />
             {isSelectedForCompare ? 'Selected' : 'Compare'}

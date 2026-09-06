@@ -72,7 +72,9 @@ export const MOCK_SCHEMES = [
         address: "Plot No. 221, Ashram Road, Near Income Tax Circle, Navrangpura",
         pincode: "380009",
         contact: "1800-102-3456",
-        website: "https://www.bfil.co.in"
+        website: "https://www.bfil.co.in",
+        latitude: 23.0396,
+        longitude: 72.5695
       },
       {
         name: "Muthoot Microfin Ltd",
@@ -80,7 +82,9 @@ export const MOCK_SCHEMES = [
         address: "3rd Floor, Silicon Tower, Near Samartheshwar Mahadev Temple, Law Garden, Ellisbridge",
         pincode: "380006",
         contact: "1800-270-0900",
-        website: "https://muthootmicrofin.com"
+        website: "https://muthootmicrofin.com",
+        latitude: 23.0215,
+        longitude: 72.5601
       }
     ]
   },
@@ -118,7 +122,9 @@ export const MOCK_SCHEMES = [
         address: "Sahakar Bhavan, Near Shastri Stadium, Relief Road",
         pincode: "380001",
         contact: "079-27544000",
-        website: "https://gscbank.co.in"
+        website: "https://gscbank.co.in",
+        latitude: 23.0287,
+        longitude: 72.5841
       },
       {
         name: "AU Small Finance Bank",
@@ -126,7 +132,9 @@ export const MOCK_SCHEMES = [
         address: "Ground Floor, Zodiac Square, Opposite Gurudwara, SG Highway, Bodakdev",
         pincode: "380054",
         contact: "1800-1200-1200",
-        website: "https://www.aubank.in"
+        website: "https://www.aubank.in",
+        latitude: 23.0332,
+        longitude: 72.5118
       }
     ]
   },
@@ -164,7 +172,9 @@ export const MOCK_SCHEMES = [
         address: "Baroda Bhavan, R.C. Dutt Road, Alkapuri",
         pincode: "390007",
         contact: "1800-180-2222",
-        website: "https://www.bankofbaroda.in"
+        website: "https://www.bankofbaroda.in",
+        latitude: 22.3107,
+        longitude: 73.1702
       }
     ]
   }
